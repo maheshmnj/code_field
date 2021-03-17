@@ -66,9 +66,11 @@ class CodeField extends StatefulWidget {
   /// {@macro flutter.widgets.textField.expands}
   final bool expands;
 
+  final bool showLines;
+
   /// A CodeController instance to apply language highlight, themeing and modifiers
   final CodeController controller;
-  
+
   /// A LineNumberStyle instance to tweak the line number column styling
   final LineNumberStyle lineNumberStyle;
 
@@ -86,7 +88,7 @@ class CodeField extends StatefulWidget {
   final Decoration? decoration;
   final TextSelectionThemeData? textSelectionTheme;
 
-  const CodeField({
+  CodeField({
     Key? key,
     required this.controller,
     this.minLines,
@@ -95,6 +97,7 @@ class CodeField extends StatefulWidget {
     this.background,
     this.decoration,
     this.textStyle,
+    this.showLines = true,
     this.padding = const EdgeInsets.symmetric(),
     this.lineNumberStyle = const LineNumberStyle(),
     this.cursorColor,
@@ -294,10 +297,11 @@ class CodeFieldState extends State<CodeField> {
     return Container(
       decoration: widget.decoration,
       color: backgroundCol,
+      padding: widget.padding,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          numberCol,
+          widget.showLines ? numberCol : Container(),
           Expanded(child: codeCol),
         ],
       ),
