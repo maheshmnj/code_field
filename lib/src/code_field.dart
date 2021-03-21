@@ -88,6 +88,7 @@ class CodeField extends StatefulWidget {
 
   final Color? backgroundColor;
   final EdgeInsets padding;
+  final EdgeInsets margin;
   final Decoration? decoration;
   final TextSelectionThemeData? textSelectionTheme;
 
@@ -102,6 +103,7 @@ class CodeField extends StatefulWidget {
     this.textStyle,
     this.showLines = true,
     this.padding = const EdgeInsets.symmetric(),
+    this.margin = const EdgeInsets.symmetric(),
     this.lineNumberStyle = const LineNumberStyle(),
     this.cursorColor,
     this.textSelectionTheme,
@@ -309,6 +311,7 @@ class CodeFieldState extends State<CodeField> {
       decoration: widget.decoration,
       color: backgroundCol,
       padding: widget.padding,
+      margin: widget.margin,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
