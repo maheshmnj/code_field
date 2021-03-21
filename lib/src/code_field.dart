@@ -66,6 +66,9 @@ class CodeField extends StatefulWidget {
   /// {@macro flutter.widgets.textField.expands}
   final bool expands;
 
+  /// defines whether to show/hide line numbers
+  ///
+  ///  defaults to `true`
   final bool showLines;
 
   /// A CodeController instance to apply language highlight, themeing and modifiers
@@ -83,7 +86,7 @@ class CodeField extends StatefulWidget {
   /// A way to replace specific line numbers by a custom TextSpan
   final TextSpan Function(int, TextStyle?)? lineNumberBuilder;
 
-  final Color? background;
+  final Color? backgroundColor;
   final EdgeInsets padding;
   final Decoration? decoration;
   final TextSelectionThemeData? textSelectionTheme;
@@ -94,7 +97,7 @@ class CodeField extends StatefulWidget {
     this.minLines,
     this.maxLines,
     this.expands = false,
-    this.background,
+    this.backgroundColor,
     this.decoration,
     this.textStyle,
     this.showLines = true,
@@ -103,7 +106,11 @@ class CodeField extends StatefulWidget {
     this.cursorColor,
     this.textSelectionTheme,
     this.lineNumberBuilder,
-  }) : super(key: key);
+  })  : assert(
+            backgroundColor == null || decoration == null,
+            'Cannot provide both a background and a decoration\n'
+            'To provide both, use "decoration: BoxDecoration(color: backgroundColor)".'),
+        super(key: key);
 
   @override
   CodeFieldState createState() => CodeFieldState();
@@ -213,14 +220,18 @@ class CodeFieldState extends State<CodeField> {
   Widget build(BuildContext context) {
     // Default color scheme
     const ROOT_KEY = 'root';
-    final defaultBg = Colors.grey.shade900;
+    final defaultBg = Colors.black;
     final defaultText = Colors.grey.shade200;
 
     final theme = widget.controller.theme;
-    Color? backgroundCol =
-        widget.background ?? theme?[ROOT_KEY]?.backgroundColor ?? defaultBg;
+    Color? backgroundCol = widget.backgroundColor ??
+        theme?[ROOT_KEY]?.backgroundColor ??
+        defaultBg;
+
     if (widget.decoration != null) {
       backgroundCol = null;
+
+      // TODO: Handle if decoration Color not specified
     }
     TextStyle textStyle = widget.textStyle ?? TextStyle();
     textStyle = textStyle.copyWith(
