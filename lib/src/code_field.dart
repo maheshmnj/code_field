@@ -86,6 +86,11 @@ class CodeField extends StatefulWidget {
   /// A way to replace specific line numbers by a custom TextSpan
   final TextSpan Function(int, TextStyle?)? lineNumberBuilder;
 
+  /// callback when the textfield text changes
+  final Function(String)? onChange;
+
+  final Function? onTap;
+
   final Color? backgroundColor;
   final EdgeInsets padding;
   final EdgeInsets margin;
@@ -101,6 +106,8 @@ class CodeField extends StatefulWidget {
     this.backgroundColor,
     this.decoration,
     this.textStyle,
+    this.onTap,
+    this.onChange,
     this.showLines = true,
     this.padding = const EdgeInsets.symmetric(),
     this.margin = const EdgeInsets.symmetric(),
@@ -286,6 +293,8 @@ class CodeFieldState extends State<CodeField> {
       minLines: widget.minLines,
       maxLines: widget.maxLines,
       expands: widget.expands,
+      onTap: () => widget.onTap!(),
+      onChanged: (x) => widget.onChange!(x),
       scrollController: _codeScroll,
       decoration: InputDecoration(
         disabledBorder: InputBorder.none,
