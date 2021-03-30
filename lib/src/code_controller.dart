@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-const _MIDDLE_DOT = '·';
+const _MIDDLE_DOT = ' ';
 
 class EditorParams {
   final int tabSpaces;
