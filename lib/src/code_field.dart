@@ -4,8 +4,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-// ignore: import_of_legacy_library_into_null_safe
 import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import './code_controller.dart';
 
@@ -15,7 +13,8 @@ class LineNumberController extends TextEditingController {
   LineNumberController(this.lineNumberBuilder);
 
   @override
-  TextSpan buildTextSpan({TextStyle? style, bool? withComposing}) {
+  TextSpan buildTextSpan(
+      {required BuildContext context, TextStyle? style, bool? withComposing}) {
     final children = <TextSpan>[];
     final list = text.split("\n");
     for (int k = 0; k < list.length; k++) {
@@ -71,6 +70,9 @@ class CodeField extends StatefulWidget {
   ///  defaults to `true`
   final bool showLines;
 
+  /// Whether overflowing lines should wrap around or make the field scrollable horizontally
+  final bool wrap;
+
   /// A CodeController instance to apply language highlight, themeing and modifiers
   final CodeController controller;
 
@@ -92,10 +94,16 @@ class CodeField extends StatefulWidget {
   final Function? onTap;
 
   final Color? backgroundColor;
+
+  /// {@macro flutter.widgets.textField.enabled}
+  final bool? enabled;
+
+  final Color? background;
   final EdgeInsets padding;
   final EdgeInsets margin;
   final Decoration? decoration;
   final TextSelectionThemeData? textSelectionTheme;
+  final FocusNode? focusNode;
 
   CodeField({
     Key? key,
@@ -104,6 +112,8 @@ class CodeField extends StatefulWidget {
     this.maxLines,
     this.expands = false,
     this.backgroundColor,
+    this.wrap = false,
+    this.background,
     this.decoration,
     this.textStyle,
     this.onTap,
@@ -112,14 +122,12 @@ class CodeField extends StatefulWidget {
     this.padding = const EdgeInsets.symmetric(),
     this.margin = const EdgeInsets.symmetric(),
     this.lineNumberStyle = const LineNumberStyle(),
+    this.enabled,
     this.cursorColor,
     this.textSelectionTheme,
     this.lineNumberBuilder,
-  })  : assert(
-            backgroundColor == null || decoration == null,
-            'Cannot provide both a background and a decoration\n'
-            'To provide both, use "decoration: BoxDecoration(color: backgroundColor)".'),
-        super(key: key);
+    this.focusNode,
+  }) : super(key: key);
 
   @override
   CodeFieldState createState() => CodeFieldState();
@@ -132,7 +140,6 @@ class CodeFieldState extends State<CodeField> {
   ScrollController? _codeScroll;
   LineNumberController? _numberController;
   //
-  final _keyboardVisibility = KeyboardVisibilityController();
   StreamSubscription<bool>? _keyboardVisibilitySubscription;
   FocusNode? _focusNode;
   String? lines;
@@ -146,13 +153,13 @@ class CodeFieldState extends State<CodeField> {
     _codeScroll = _controllers?.addAndGet();
     _numberController = LineNumberController(widget.lineNumberBuilder);
     widget.controller.addListener(_onTextChanged);
-    _keyboardVisibilitySubscription =
-        _keyboardVisibility.onChange.listen(_onKeyboardChanged);
-    _focusNode = FocusNode(onKey: _onKey);
+    _focusNode = widget.focusNode ?? FocusNode();
+    _focusNode!.attach(context, onKey: _onKey);
+
     _onTextChanged();
   }
 
-  bool _onKey(FocusNode node, RawKeyEvent event) {
+  KeyEventResult _onKey(FocusNode node, RawKeyEvent event) {
     return widget.controller.onKey(event);
   }
 
@@ -164,10 +171,6 @@ class CodeFieldState extends State<CodeField> {
     _numberController?.dispose();
     _keyboardVisibilitySubscription?.cancel();
     super.dispose();
-  }
-
-  void _onKeyboardChanged(bool visible) {
-    if (!visible) FocusScope.of(context).requestFocus(FocusNode());
   }
 
   void rebuild() {
@@ -200,7 +203,6 @@ class CodeFieldState extends State<CodeField> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ConstrainedBox(
-            // Force the neightoring textBox
             constraints: BoxConstraints(
               maxHeight: 0.0,
               minWidth: max(minWidth - leftPad, 0.0),
@@ -208,7 +210,7 @@ class CodeFieldState extends State<CodeField> {
             child: Padding(
               child: Text(longestLine, style: textStyle),
               padding: const EdgeInsets.only(right: 16.0),
-            ), // Add some buffer),
+            ), // Add extra padding
           ),
           widget.expands ? Expanded(child: codeField) : codeField,
         ],
@@ -280,7 +282,6 @@ class CodeFieldState extends State<CodeField> {
         left: widget.padding.left,
         right: widget.lineNumberStyle.margin / 2,
       ),
-      // padding: widget.lineNumberStyle.padding,
       color: widget.lineNumberStyle.background,
       child: lineNumberCol,
     );
@@ -304,6 +305,7 @@ class CodeFieldState extends State<CodeField> {
       cursorColor: cursorColor,
       autocorrect: false,
       enableSuggestions: false,
+      enabled: widget.enabled,
     );
 
     final codeCol = Theme(
@@ -312,7 +314,10 @@ class CodeFieldState extends State<CodeField> {
       ),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          return _wrapInScrollView(codeField, textStyle, constraints.maxWidth);
+          // Control horizontal scrolling
+          return widget.wrap
+              ? codeField
+              : _wrapInScrollView(codeField, textStyle, constraints.maxWidth);
         },
       ),
     );

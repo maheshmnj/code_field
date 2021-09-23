@@ -39,6 +39,9 @@ class CodeController extends TextEditingController {
   /// https://github.com/flutter/flutter/issues/77929
   final bool webSpaceFix;
 
+  /// onChange callback, called whenever the content is changed
+  final void Function(String)? onChange;
+
   /* Computed members */
   final String languageId = _genId();
   final styleList = <TextStyle>[];
@@ -58,6 +61,7 @@ class CodeController extends TextEditingController {
       const TabModifier(),
     ],
     this.webSpaceFix = true,
+    this.onChange,
   }) : super(text: text) {
     // PatternMap
     if (language != null && theme == null)
@@ -83,24 +87,61 @@ class CodeController extends TextEditingController {
     );
   }
 
-  bool onKey(RawKeyEvent event) {
-    if (event.isKeyPressed(LogicalKeyboardKey.tab)) {
-      text = text.replaceRange(selection.start, selection.end, "\t");
-      return true;
-    }
-    return false;
+  /// Remove the char just before the cursor or the selection
+  void removeChar() {
+    if (selection.start < 1) return;
+    final sel = selection;
+    text = text.replaceRange(selection.start - 1, selection.start, "");
+    selection = sel.copyWith(
+      baseOffset: sel.start - 1,
+      extentOffset: sel.start - 1,
+    );
   }
 
-  /// Method to get untransformed text
-  ///
+  /// Remove the selected text
+  void removeSelection() {
+    final sel = selection;
+    text = text.replaceRange(selection.start, selection.end, "");
+    selection = sel.copyWith(
+      baseOffset: sel.start,
+      extentOffset: sel.start,
+    );
+  }
+
+  /// Remove the selection or last char if the selection is empty
+  void backspace() {
+    if (selection.start < selection.end)
+      removeSelection();
+    else
+      removeChar();
+  }
+
+  KeyEventResult onKey(RawKeyEvent event) {
+    if (event.isKeyPressed(LogicalKeyboardKey.tab)) {
+      text = text.replaceRange(selection.start, selection.end, "\t");
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  /// See webSpaceFix
+  static String _spacesToMiddleDots(String str) {
+    return str.replaceAll(" ", _MIDDLE_DOT);
+  }
+
+  /// See webSpaceFix
+  static String _middleDotsToSpaces(String str) {
+    return str.replaceAll(_MIDDLE_DOT, " ");
+  }
+
+  /// Get untransformed text
   /// See webSpaceFix
   String get rawText {
     if (!_webSpaceFix) return super.text;
-    return super.text.replaceAll(_MIDDLE_DOT, " ");
+    return _middleDotsToSpaces(super.text);
   }
 
   // Private methods
-
   bool get _webSpaceFix => kIsWeb && webSpaceFix;
 
   static String _genId() {
@@ -134,11 +175,11 @@ class CodeController extends TextEditingController {
       }
     }
     // Now fix the textfield for web
-    if (_webSpaceFix) {
-      newValue = newValue.copyWith(
-        text: newValue.text.replaceAll(' ', _MIDDLE_DOT),
-      );
-    }
+    if (_webSpaceFix)
+      newValue = newValue.copyWith(text: _spacesToMiddleDots(newValue.text));
+    if (onChange != null)
+      onChange!(
+          _webSpaceFix ? _middleDotsToSpaces(newValue.text) : newValue.text);
     super.value = newValue;
   }
 
@@ -169,7 +210,8 @@ class CodeController extends TextEditingController {
   }
 
   TextSpan _processLanguage(String text, TextStyle? style) {
-    final result = highlight.parse(text, language: languageId);
+    final rawText = _webSpaceFix ? _middleDotsToSpaces(text) : text;
+    final result = highlight.parse(rawText, language: languageId);
 
     final nodes = result.nodes;
 
@@ -178,9 +220,10 @@ class CodeController extends TextEditingController {
     final stack = <List<TextSpan>>[];
 
     void _traverse(Node node) {
-      final val = node.value;
+      var val = node.value;
       final nodeChildren = node.children;
       if (val != null) {
+        if (_webSpaceFix) val = _spacesToMiddleDots(val);
         var child = TextSpan(text: val, style: theme?[node.className]);
         if (styleRegExp != null)
           child = _processPatterns(val, theme?[node.className]);
@@ -207,7 +250,8 @@ class CodeController extends TextEditingController {
   }
 
   @override
-  TextSpan buildTextSpan({TextStyle? style, bool? withComposing}) {
+  TextSpan buildTextSpan(
+      {required BuildContext context, TextStyle? style, bool? withComposing}) {
     // Retrieve pattern regexp
     final patternList = <String>[];
     if (_webSpaceFix) {

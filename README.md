@@ -5,6 +5,7 @@ A customizable code text field supporting syntax highlighting
 [![Pub](https://img.shields.io/pub/v/code_text_field.svg)](https://pub.dev/packages/code_text_field)
 [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://bertrandbev.github.io/code_field/)
 [![GitHub license](https://img.shields.io/github/license/Naereen/StrapDown.js.svg)](https://raw.githubusercontent.com/BertrandBev/code_field/master/LICENSE)
+[![Awesome Flutter](https://img.shields.io/badge/Awesome-Flutter-blue.svg?longCache=true&style=flat-square)](https://github.com/Solido/awesome-flutter)
 
 <img src="https://raw.githubusercontent.com/BertrandBev/code_field/master/doc/images/top.gif" width="70%">
 
@@ -14,7 +15,7 @@ A [live demo](https://bertrandbev.github.io/code_field/#/) showcasing a few lang
 
 ## Showcase
 
-The dart VM [dlox](https://github.com/BertrandBev/dlox) uses **CodeField** in its [online editor](https://bertrandbev.github.io/dlox/#/) 
+The experimental VM [dlox](https://github.com/BertrandBev/dlox) uses **CodeField** in its [online editor](https://bertrandbev.github.io/dlox/#/) 
 
 
 ## Features
@@ -187,14 +188,17 @@ Key? key,
   this.minLines,
   this.maxLines,
   this.expands = false,
+  this.wrap = false,
   this.background,
   this.decoration,
   this.textStyle,
   this.padding = const EdgeInsets.symmetric(),
   this.lineNumberStyle = const LineNumberStyle(),
+  this.enabled,
   this.cursorColor,
   this.textSelectionTheme,
   this.lineNumberBuilder,
+  this.focusNode,
 })
 ```
 
@@ -223,6 +227,7 @@ CodeController({
     const CloseBlockModifier(),
     const TabModifier(),
   ],
+  this.onChange,
 })
 ```
 
@@ -230,3 +235,7 @@ CodeController({
 
 - Autocomplete disabling on android [doesn't work yet](https://github.com/flutter/flutter/issues/71679)
 - The TextField cursor doesn't seem to be handling space inputs properly on the web platform. Pending [issue resolution](https://github.com/flutter/flutter/issues/77929). The flag `webSpaceFix` fixes it by swapping spaces with transparent middle points.
+
+## Notes
+
+A [breaking change](https://flutter.dev/docs/release/breaking-changes/buildtextspan-buildcontext) to the `TextEditingController` was introduced in flutter beta, dev & master channels. The branch [beta](https://github.com/BertrandBev/code_field/tree/beta) should comply with those changes.
